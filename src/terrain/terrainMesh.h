@@ -2,6 +2,9 @@
 
 #include <glad/gl.h>
 #include <vector>
+#include <cstdlib>
+#include <ctime>
+#include <iostream>
 
 class TerrainMesh {
 public:
@@ -14,9 +17,9 @@ public:
     void generateGrid(int width, int depth);
 
     std::vector<float> m_heightmap;
-    float m_scale = 10.0f;
+    float m_scale = 100.0f;
     int m_seed = 12348970;
-    float m_mix = 0.3f;
+    float m_mix = 0.6f;
     int m_width, m_depth;
     unsigned int m_vao = 0;
     unsigned int m_vbo = 0;

@@ -3,9 +3,11 @@
 #include "mesh.h"
 
 TerrainMesh::TerrainMesh(int width, int depth) {
-
     m_width = width;
     m_depth = depth;
+
+    std::srand(std::time({}));
+    m_seed = std::rand();
 
     // generate a terrain heightmap
     m_heightmap.resize(width * depth);

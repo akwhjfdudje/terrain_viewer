@@ -17,9 +17,11 @@ public:
     bool m_firstMouse = true;
     double m_lastX = 0.0;
     double m_lastY = 0.0;
+    double m_mouseX = 0.0;
+    double m_mouseY = 0.0;
 
-    int m_gridWidth = 512;   // NxN grid
-    int m_gridDepth = 512;
+    int m_gridWidth = 1024;   // NxN grid
+    int m_gridDepth = 1024;
 
     std::unique_ptr<TerrainMesh> m_terrain;
     std::unique_ptr<Shader> m_shader;

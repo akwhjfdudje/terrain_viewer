@@ -4,7 +4,7 @@
 #include "application.h"
 #include "render/shader.h"
 #include "render/camera.h"
-#include "terrain/TerrainMesh.h"
+#include "terrain/terrainMesh.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -23,13 +23,9 @@ static void mouseCallback(GLFWwindow* window, double x, double y) {
         app->m_firstMouse = false;
     }
 
-    float dx = float(x - app->m_lastX);
-    float dy = float(app->m_lastY - y);
-
-    app->m_lastX = x;
-    app->m_lastY = y;
-
-    app->m_camera->processMouse(dx, dy);
+    // store deltas for later use in run()
+    app->m_mouseX = x;
+    app->m_mouseY = y;
 }
 
 static void glfwErrorCallback(int code, const char* desc) {
@@ -136,6 +132,7 @@ void Application::initOpenGL() {
         "shaders/terrain.frag"
     );
 
+    float farPlane = m_terrain->m_scale * 1.5f; // leave some margin
     m_camera = std::make_unique<Camera>(
         60.0f,
         float(m_width) / float(m_height),
@@ -146,7 +143,8 @@ void Application::initOpenGL() {
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO& io = ImGui::GetIO(); (void)io;
+    ImGuiIO& io = ImGui::GetIO();
+    io.MouseDrawCursor = !mouseCaptured; // draw cursor only when mouse not captured
 
     // Setup style
     ImGui::StyleColorsDark();
@@ -190,9 +188,49 @@ void Application::run() {
         lastTime = now;
 
         glfwPollEvents();
+
+        // Start ImGui frame
+        ImGui_ImplOpenGL3_NewFrame();
+        ImGui_ImplGlfw_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::Begin("Terrain Controls");
+        ImGui::SliderFloat("Height Scale", &m_terrain->m_scale, 1.0f, 1000.0f);
+        ImGui::SliderFloat("Noise Mix", &m_terrain->m_mix, 0.0f, 1.0f);
+        if (ImGui::Button("Regenerate")) m_terrain->regenerate();
+        ImGui::End();
+
+        // Process camera input only if mouse is captured AND ImGui is not using it
+        ImGuiIO& io = ImGui::GetIO();
+        io.MouseDrawCursor = !mouseCaptured; // draw ImGui cursor when camera is not capturing
+
+        double xpos, ypos;
+        glfwGetCursorPos(m_window, &xpos, &ypos);
+        if (mouseCaptured && !io.WantCaptureMouse) {
+            float dx = float(m_mouseX - m_lastX);
+            float dy = float(m_lastY - m_mouseY);
+            m_lastX = m_mouseX;
+            m_lastY = m_mouseY;
+            m_camera->processMouse(dx, dy);
+        }
+
+        // Update & render
         processInput();
         update(dt);
-        render();
+
+        glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        m_shader->bind();
+        m_shader->setMat4("uView", m_camera->view());
+        m_shader->setMat4("uProj", m_camera->projection());
+        m_shader->setVec3("uLightDir", glm::normalize(glm::vec3(0.5f,1.0f,0.3f)));
+        m_terrain->draw();
+        m_shader->unbind();
+
+        // Render ImGui on top
+        ImGui::Render();
+        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
         glfwSwapBuffers(m_window);
     }
@@ -201,6 +239,15 @@ void Application::run() {
 void Application::processInput() {
     if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(m_window, true);
+
+    // Base camera speed
+    float baseSpeed = 10.0f;
+
+    // Scale with terrain size
+    float speed = baseSpeed * (m_terrain->m_scale / 100.0f); // adjust 100.0f as needed
+
+    // Use dt for smooth movement
+    speed *= 1.0f / 60.0f; // or your frame delta
 
     float dx = 0, dy = 0, dz = 0;
 
@@ -211,7 +258,7 @@ void Application::processInput() {
     if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS) dz += 1;
     if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS) dz -= 1;
 
-    m_camera->processKeyboard(dx, dy, dz, 1.0f / 60.0f);
+    m_camera->processKeyboard(dx, dy, dz, speed);
 }
 
 void Application::update(float /*dt*/) {
@@ -221,31 +268,6 @@ void Application::update(float /*dt*/) {
 void Application::render() {
     glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    // Start the ImGui frame
-    ImGui_ImplOpenGL3_NewFrame();
-    ImGui_ImplGlfw_NewFrame();
-    ImGui::NewFrame();
-
-    // Example window
-    ImGui::Begin("Terrain Controls");
-
-    // Adjust height scale
-    ImGui::SliderFloat("Height Scale", &m_terrain->m_scale, 0.1f, 5.0f);
-
-    // Adjust Perlin / Voronoi blend
-    ImGui::SliderFloat("Noise Mix", &m_terrain->m_mix, 0.0f, 1.0f);
-
-    // Regenerate terrain button
-    if (ImGui::Button("Regenerate")) {
-        m_terrain->regenerate();
-    }
-
-    ImGui::End();
-
-    // Render ImGui
-    ImGui::Render();
-    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
 
     m_shader->bind();
     m_shader->setMat4("uView", m_camera->view());
