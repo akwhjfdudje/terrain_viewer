@@ -4,7 +4,8 @@
 #include "application.h"
 #include "render/shader.h"
 #include "render/camera.h"
-#include "terrain/terrainMesh.h"
+#include "terrain/terrainManager.h"
+#include "terrain/const.h"
 
 #include "imgui.h"
 #include "backends/imgui_impl_glfw.h"
@@ -34,27 +35,6 @@ static void glfwErrorCallback(int code, const char* desc) {
 
 static void framebufferSizeCallback(GLFWwindow*, int w, int h) {
     glViewport(0, 0, w, h);
-}
-
-void initTriangle(Application* app) {
-    float vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-         0.5f, -0.5f, 0.0f,
-         0.0f,  0.5f, 0.0f
-    };
-
-    glGenVertexArrays(1, &app->m_vao);
-    glGenBuffers(1, &app->m_vbo);
-
-    glBindVertexArray(app->m_vao);
-
-    glBindBuffer(GL_ARRAY_BUFFER, app->m_vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-
-    glBindVertexArray(0);
 }
 
 Application::Application(int width, int height, const std::string& title)
@@ -108,6 +88,9 @@ void Application::initOpenGL() {
     std::cout << "OpenGL Version  : " << glGetString(GL_VERSION) << std::endl;
 
     // Global GL state
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
@@ -132,6 +115,8 @@ void Application::initOpenGL() {
         "shaders/terrain.frag"
     );
 
+    m_terrain = std::make_unique<TerrainManager>(m_gridWidth, m_gridDepth);
+
     float farPlane = m_terrain->m_scale * 1.5f; // leave some margin
     m_camera = std::make_unique<Camera>(
         60.0f,
@@ -139,7 +124,6 @@ void Application::initOpenGL() {
         0.1f,
         500.0f
     );
-    m_terrain = std::make_unique<TerrainMesh>(m_gridWidth, m_gridDepth);
 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
@@ -196,8 +180,6 @@ void Application::run() {
 
         ImGui::Begin("Terrain Controls");
         ImGui::SliderFloat("Height Scale", &m_terrain->m_scale, 1.0f, 1000.0f);
-        ImGui::SliderFloat("Noise Mix", &m_terrain->m_mix, 0.0f, 1.0f);
-        if (ImGui::Button("Regenerate")) m_terrain->regenerate();
         ImGui::End();
 
         // Process camera input only if mouse is captured AND ImGui is not using it
@@ -222,6 +204,7 @@ void Application::run() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         m_shader->bind();
+        m_shader->setFloat("uTime", glfwGetTime());
         m_shader->setMat4("uView", m_camera->view());
         m_shader->setMat4("uProj", m_camera->projection());
         m_shader->setVec3("uLightDir", glm::normalize(glm::vec3(0.5f,1.0f,0.3f)));
@@ -261,8 +244,8 @@ void Application::processInput() {
     m_camera->processKeyboard(dx, dy, dz, speed);
 }
 
-void Application::update(float /*dt*/) {
-    // Terrain updates later (regen, erosion, etc.)
+void Application::update(float dt) {
+    m_terrain->update(m_camera->position());
 }
 
 void Application::render() {
