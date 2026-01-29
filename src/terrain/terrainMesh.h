@@ -14,7 +14,7 @@ public:
     void generateGrid(int width, int depth);
 
     std::vector<float> m_heightmap;
-    float m_scale = 100.0f;
+    float m_scale = 10.0f;
     int m_seed = 12348970;
     float m_mix = 0.3f;
     int m_width, m_depth;

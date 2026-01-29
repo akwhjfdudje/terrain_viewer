@@ -9,7 +9,7 @@ out vec4 FragColor;
 uniform vec3 uLightDir = normalize(vec3(0.5, 1.0, 0.3));
 uniform float uWaterLevel = 0.0;        // Y-coordinate of water surface
 uniform vec3 uWaterColor = vec3(0.0, 0.3, 0.6); // blue water
-uniform float uWaterOpacity = 0.7;      // 0 = fully transparent, 1 = opaque
+uniform float uWaterOpacity = 0.9;      // 0 = fully transparent, 1 = opaque
 
 vec3 getColor(float h) {
     if (h < -30) return vec3(0.0, 0.0, 0.6);      // deep water
