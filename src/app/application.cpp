@@ -152,7 +152,7 @@ void Application::initOpenGL() {
     ImGui::StyleColorsDark();
 
     // Setup backend
-    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    ImGui_ImplGlfw_InitForOpenGL(m_window, false);
     ImGui_ImplOpenGL3_Init("#version 330");
 }
 
@@ -161,8 +161,24 @@ void Application::setupCallbacks() {
     glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
     glfwSetCursorPosCallback(m_window, mouseCallback);
     glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetKeyCallback(m_window, [](GLFWwindow* window, int key, int scancode, int action, int mods) {
+        if (key == GLFW_KEY_TAB && action == GLFW_PRESS) {
+            // get pointer to your app (stored as GLFW user pointer)
+            auto app = static_cast<Application*>(glfwGetWindowUserPointer(window));
+            app->toggleMouseCapture();
+        }
+    });
+
 }
 
+void Application::toggleMouseCapture() {
+    mouseCaptured = !mouseCaptured;
+    if (mouseCaptured) {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED); // hide + capture
+    } else {
+        glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);   // show cursor
+    }
+}
 
 void Application::run() {
     using clock = std::chrono::high_resolution_clock;
@@ -215,10 +231,10 @@ void Application::render() {
     ImGui::Begin("Terrain Controls");
 
     // Adjust height scale
-    ImGui::SliderFloat("Height Scale", &m_terrain->heightScale, 0.1f, 5.0f);
+    ImGui::SliderFloat("Height Scale", &m_terrain->m_scale, 0.1f, 5.0f);
 
     // Adjust Perlin / Voronoi blend
-    ImGui::SliderFloat("Noise Mix", &m_terrain->mixRatio, 0.0f, 1.0f);
+    ImGui::SliderFloat("Noise Mix", &m_terrain->m_mix, 0.0f, 1.0f);
 
     // Regenerate terrain button
     if (ImGui::Button("Regenerate")) {

@@ -2,8 +2,11 @@
 #include "heightmap.h"
 #include "mesh.h"
 
-TerrainMesh::TerrainMesh(int width, int depth)
-{
+TerrainMesh::TerrainMesh(int width, int depth) {
+
+    m_width = width;
+    m_depth = depth;
+
     // generate a terrain heightmap
     m_heightmap.resize(width * depth);
 
@@ -27,7 +30,7 @@ TerrainMesh::TerrainMesh(int width, int depth)
         normals.data(),
         texcoords.data(),
         width, depth,
-        1.0f, 1.0f, 1.0f // scaleX, scaleY, heightScale
+        1.0f, 1.0f, m_scale // scaleX, scaleY, heightScale
     );
 
     // flatten vertices and normals into OpenGL buffer (interleaved or positions only)
@@ -87,7 +90,6 @@ TerrainMesh::TerrainMesh(int width, int depth)
     glBindVertexArray(0);
 }
 
-
 TerrainMesh::~TerrainMesh() {
     glDeleteVertexArrays(1, &m_vao);
     glDeleteBuffers(1, &m_vbo);
@@ -115,7 +117,7 @@ void TerrainMesh::regenerate() {
         texcoords.data(),
         m_width,
         m_depth,
-        1.0f, 1.0f, m_heightScale
+        1.0f, 1.0f, m_scale
     );
 
     // update OpenGL buffer

@@ -11,14 +11,13 @@ public:
     void draw() const;
     void regenerate();
 
-private:
     void generateGrid(int width, int depth);
 
-private:
     std::vector<float> m_heightmap;
-    float m_scale = 10.0f;
-    int m_seed = 1337;
+    float m_scale = 100.0f;
+    int m_seed = 12348970;
     float m_mix = 0.3f;
+    int m_width, m_depth;
     unsigned int m_vao = 0;
     unsigned int m_vbo = 0;
     unsigned int m_ebo = 0;

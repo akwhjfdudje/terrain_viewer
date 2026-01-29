@@ -18,8 +18,8 @@ public:
     double m_lastX = 0.0;
     double m_lastY = 0.0;
 
-    int m_gridWidth = 64;   // NxN grid
-    int m_gridDepth = 64;
+    int m_gridWidth = 512;   // NxN grid
+    int m_gridDepth = 512;
 
     std::unique_ptr<TerrainMesh> m_terrain;
     std::unique_ptr<Shader> m_shader;
@@ -39,6 +39,7 @@ private:
     void processInput();
     void update(float dt);
     void render();
+    void toggleMouseCapture();
 
 private:
     int m_width;
@@ -47,5 +48,6 @@ private:
 
     GLFWwindow* m_window = nullptr;
     bool m_running = true;
+    bool mouseCaptured = true; // start in camera mode
 };
 
