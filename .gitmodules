@@ -1,0 +1,12 @@
+[submodule "external/glfw"]
+	path = external/glfw
+	url = https://github.com/glfw/glfw
+[submodule "external/glm"]
+	path = external/glm
+	url = https://github.com/g-truc/glm
+[submodule "external/imgui"]
+	path = external/imgui
+	url = https://github.com/ocornut/imgui
+[submodule "external/glad"]
+	path = external/glad
+	url = https://github.com/Dav1dde/glad

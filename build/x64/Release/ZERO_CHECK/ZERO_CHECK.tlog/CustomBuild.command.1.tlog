@@ -1,0 +1,10 @@
+^C:\USERS\ARSHA\DOCUMENTS\FUN\GITS\TERRAIN_VIEWER\BUILD\CMAKEFILES\50D9C1DA1BE207FF740EBB64F5C37F5F\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SC:/Users/arsha/Documents/fun/gits/terrain_viewer -BC:/Users/arsha/Documents/fun/gits/terrain_viewer/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file C:/Users/arsha/Documents/fun/gits/terrain_viewer/build/TerrainViewer.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd

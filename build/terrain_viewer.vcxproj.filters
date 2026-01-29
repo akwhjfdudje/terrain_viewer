@@ -1,0 +1,40 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\app\application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\render\camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\render\renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\render\shader.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\terrain\heightmap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\terrain\noise.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\terrain\terrainMesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\src\util\log.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\arsha\Documents\fun\gits\terrain_viewer\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{EEF9A822-249F-33F5-9359-19BD3999FC98}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
