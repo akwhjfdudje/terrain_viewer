@@ -2,10 +2,35 @@
 #include <GLFW/glfw3.h>
 
 #include "application.h"
+#include "render/shader.h"
+#include "render/camera.h"
+#include "terrain/TerrainMesh.h"
+
+#include "imgui.h"
+#include "backends/imgui_impl_glfw.h"
+#include "backends/imgui_impl_opengl3.h"
 
 #include <iostream>
 #include <chrono>
 #include <cassert>
+
+static void mouseCallback(GLFWwindow* window, double x, double y) {
+    auto* app = reinterpret_cast<Application*>(glfwGetWindowUserPointer(window));
+
+    if (app->m_firstMouse) {
+        app->m_lastX = x;
+        app->m_lastY = y;
+        app->m_firstMouse = false;
+    }
+
+    float dx = float(x - app->m_lastX);
+    float dy = float(app->m_lastY - y);
+
+    app->m_lastX = x;
+    app->m_lastY = y;
+
+    app->m_camera->processMouse(dx, dy);
+}
 
 static void glfwErrorCallback(int code, const char* desc) {
     std::cerr << "[GLFW] (" << code << ") " << desc << std::endl;
@@ -13,6 +38,27 @@ static void glfwErrorCallback(int code, const char* desc) {
 
 static void framebufferSizeCallback(GLFWwindow*, int w, int h) {
     glViewport(0, 0, w, h);
+}
+
+void initTriangle(Application* app) {
+    float vertices[] = {
+        -0.5f, -0.5f, 0.0f,
+         0.5f, -0.5f, 0.0f,
+         0.0f,  0.5f, 0.0f
+    };
+
+    glGenVertexArrays(1, &app->m_vao);
+    glGenBuffers(1, &app->m_vbo);
+
+    glBindVertexArray(app->m_vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, app->m_vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+
+    glBindVertexArray(0);
 }
 
 Application::Application(int width, int height, const std::string& title)
@@ -23,6 +69,10 @@ Application::Application(int width, int height, const std::string& title)
 }
 
 Application::~Application() {
+    ImGui_ImplOpenGL3_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
+
     glfwTerminate();
 }
 
@@ -81,11 +131,38 @@ void Application::initOpenGL() {
         nullptr
     );
 #endif
+    m_shader = std::make_unique<Shader>(
+        "shaders/terrain.vert",
+        "shaders/terrain.frag"
+    );
+
+    m_camera = std::make_unique<Camera>(
+        60.0f,
+        float(m_width) / float(m_height),
+        0.1f,
+        500.0f
+    );
+    m_terrain = std::make_unique<TerrainMesh>(m_gridWidth, m_gridDepth);
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO(); (void)io;
+
+    // Setup style
+    ImGui::StyleColorsDark();
+
+    // Setup backend
+    ImGui_ImplGlfw_InitForOpenGL(m_window, true);
+    ImGui_ImplOpenGL3_Init("#version 330");
 }
 
 void Application::setupCallbacks() {
+    glfwSetWindowUserPointer(m_window, this);
     glfwSetFramebufferSizeCallback(m_window, framebufferSizeCallback);
+    glfwSetCursorPosCallback(m_window, mouseCallback);
+    glfwSetInputMode(m_window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
+
 
 void Application::run() {
     using clock = std::chrono::high_resolution_clock;
@@ -106,9 +183,19 @@ void Application::run() {
 }
 
 void Application::processInput() {
-    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS) {
+    if (glfwGetKey(m_window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(m_window, true);
-    }
+
+    float dx = 0, dy = 0, dz = 0;
+
+    if (glfwGetKey(m_window, GLFW_KEY_A) == GLFW_PRESS) dx -= 1;
+    if (glfwGetKey(m_window, GLFW_KEY_D) == GLFW_PRESS) dx += 1;
+    if (glfwGetKey(m_window, GLFW_KEY_Q) == GLFW_PRESS) dy -= 1;
+    if (glfwGetKey(m_window, GLFW_KEY_E) == GLFW_PRESS) dy += 1;
+    if (glfwGetKey(m_window, GLFW_KEY_W) == GLFW_PRESS) dz += 1;
+    if (glfwGetKey(m_window, GLFW_KEY_S) == GLFW_PRESS) dz -= 1;
+
+    m_camera->processKeyboard(dx, dy, dz, 1.0f / 60.0f);
 }
 
 void Application::update(float /*dt*/) {
@@ -116,7 +203,42 @@ void Application::update(float /*dt*/) {
 }
 
 void Application::render() {
-    glClearColor(0.55f, 0.75f, 0.95f, 1.0f); // sky-ish
+    glClearColor(0.1f, 0.1f, 0.15f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+    // Start the ImGui frame
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    // Example window
+    ImGui::Begin("Terrain Controls");
+
+    // Adjust height scale
+    ImGui::SliderFloat("Height Scale", &m_terrain->heightScale, 0.1f, 5.0f);
+
+    // Adjust Perlin / Voronoi blend
+    ImGui::SliderFloat("Noise Mix", &m_terrain->mixRatio, 0.0f, 1.0f);
+
+    // Regenerate terrain button
+    if (ImGui::Button("Regenerate")) {
+        m_terrain->regenerate();
+    }
+
+    ImGui::End();
+
+    // Render ImGui
+    ImGui::Render();
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+    m_shader->bind();
+    m_shader->setMat4("uView", m_camera->view());
+    m_shader->setMat4("uProj", m_camera->projection());
+
+    // optional: change light direction or color
+    m_shader->setVec3("uLightDir", glm::normalize(glm::vec3(0.5f,1.0f,0.3f)));
+
+    m_terrain->draw();
+    m_shader->unbind();
 }
 
